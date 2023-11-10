@@ -32,6 +32,7 @@ public:
     // SnapshotManager
     Snapper(): Snapshot("") {};
     std::unique_ptr<Snapshot> create(std::string base, std::string description) override;
+    std::unique_ptr<Snapshot> create(std::string description) override;
     virtual std::unique_ptr<Snapshot> open(std::string id) override;
     std::deque<std::map<std::string, std::string>> getList(std::string columns) override;
     std::string getCurrent() override;

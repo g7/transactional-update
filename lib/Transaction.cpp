@@ -294,6 +294,19 @@ void Transaction::init(std::string base, std::optional<std::string> description)
     }
 }
 
+void Transaction::init_empty(std::optional<std::string> description) {
+    if (!description)
+        description = "Rebase";
+    pImpl->snapshot = pImpl->snapshotMgr->create(description.value());
+
+    tulog.info("Creating empty subvolume.");
+
+    if (pImpl->discardIfNoChange) {
+        // Flag file to indicate this snapshot was initialized with discard flag
+        std::ofstream output(getRoot() / "discardIfNoChange");
+    }
+}
+
 void Transaction::resume(std::string id) {
     pImpl->snapshot = pImpl->snapshotMgr->open(id);
     if (! pImpl->snapshot->isInProgress()) {

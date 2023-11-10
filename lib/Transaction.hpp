@@ -51,6 +51,14 @@ public:
     void init(std::string base, std::optional<std::string> description = std::nullopt);
 
     /**
+     * @brief Open a new transaction
+     * @param description (optional) allows to customize the description of the snapshot
+     *
+     * Create a new empty subvolume
+     */
+    void init_empty(std::optional<std::string> description = std::nullopt);
+
+    /**
      * @brief Set flag to discard snapshots if no changes are detected
      * @param discard true or false
      *

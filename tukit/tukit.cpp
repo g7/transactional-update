@@ -36,6 +36,8 @@ void TUKit::displayHelp() {
     cout << "\tIf no command is given an interactive shell will be opened.\n";
     cout << "open\n";
     cout << "\tCreates a new transaction and prints its unique ID\n";
+    cout << "open-empty\n";
+    cout << "\tCreates a new empty subvolume and prints its unique ID\n";
     cout << "call <ID> <command>\n";
     cout << "\tExecutes the given command from within the transaction's chroot environment,\n";
     cout << "\tresuming the transaction with the given ID; returns the exit status of the\n";
@@ -154,6 +156,16 @@ int TUKit::processCommand(char *argv[]) {
             transaction.setDiscardIfUnchanged(true);
         }
         transaction.init(baseSnapshot, description);
+        cout << "ID: " << transaction.getSnapshot() << endl;
+        transaction.keep();
+        return 0;
+    }
+    else if (arg == "open-empty") {
+        TransactionalUpdate::Transaction transaction{};
+        if (discardSnapshot) {
+            transaction.setDiscardIfUnchanged(true);
+        }
+        transaction.init_empty(description);
         cout << "ID: " << transaction.getSnapshot() << endl;
         transaction.keep();
         return 0;

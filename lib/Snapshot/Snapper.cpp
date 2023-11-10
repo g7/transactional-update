@@ -22,6 +22,12 @@ std::unique_ptr<Snapshot> Snapper::create(std::string base, std::string descript
     return std::make_unique<Snapper>(snapshotId);
 }
 
+std::unique_ptr<Snapshot> Snapper::create(std::string description) {
+    snapshotId = callSnapper("create --empty --read-write --cleanup-algorithm number --print-number --description '" + description + "' --userdata 'transactional-update-in-progress=yes'");
+    Util::rtrim(snapshotId);
+    return std::make_unique<Snapper>(snapshotId);
+}
+
 std::unique_ptr<Snapshot> Snapper::open(std::string id) {
     snapshotId = id;
     if (! std::filesystem::exists(getRoot()))

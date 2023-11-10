@@ -34,6 +34,7 @@ public:
     SnapshotManager() = default;
     virtual ~SnapshotManager() = default;
     virtual std::unique_ptr<Snapshot> create(std::string base, std::string description) = 0;
+    virtual std::unique_ptr<Snapshot> create(std::string description) = 0;
     virtual std::unique_ptr<Snapshot> open(std::string id) = 0;
 
     /**
