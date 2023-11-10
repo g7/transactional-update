@@ -26,6 +26,7 @@ VERBOSITY=2
 ZYPPER_ARG=""
 ZYPPER_NONINTERACTIVE="-y --auto-agree-with-product-licenses"
 ZYPPER_ARG_PKGS=()
+REBASE_ARG=()
 REWRITE_BOOTLOADER=0
 REWRITE_GRUB_CFG=0
 REWRITE_INITRD=0
@@ -37,6 +38,7 @@ DO_MIGRATION=0
 DO_DUP=0
 DO_ROLLBACK=0
 DO_SELF_UPDATE=1
+DO_REBASE=0
 DO_REGISTRATION=0
 DO_RUN=0
 DO_STATUS=0
@@ -165,6 +167,7 @@ usage() {
     echo "pkg install|in ...         Install individual packages (i)"
     echo "pkg remove|rm ...          Remove individual packages (i)"
     echo "pkg update|up ...          Updates individual packages (i)"
+    echo "rebase ...                 Rebases the installation on top a given pattern/image (n)"
     echo "register ...               Register system via SUSEConnect (implies -d)"
     echo ""
     echo "Standalone Commands:"
@@ -1093,6 +1096,29 @@ parse_args() {
 		# ZYPPER_ARG handled below
 		shift
 		;;
+	    rebase)
+		REWRITE_BOOTLOADER=1
+		REWRITE_GRUB_CFG=1
+		REWRITE_INITRD=1
+		REBUILD_KDUMP_INITRD=1
+		DO_REBASE=1
+		#SETUP_SELINUX=1 # Check is done *before* rebasing
+		shift
+
+		# Pick up arguments
+		if [ $# -eq 0 ]; then
+		    usage 1
+		fi
+
+		while [ 1 ]; do
+		    if [ $# -eq 0 ]; then
+			break;
+		    else
+			REBASE_ARG+=("$1");
+			shift
+		    fi
+		done
+		;;
 	    register)
 		DO_REGISTRATION=1
 		shift
@@ -1455,6 +1481,7 @@ fi
 if [ -n "${ZYPPER_ARG}" -o ${REWRITE_GRUB_CFG} -eq 1 \
     -o ${REWRITE_INITRD} -eq 1 -o ${REBUILD_KDUMP_INITRD} -eq 1 \
     -o ${RUN_SHELL} -eq 1 -o ${DO_RUN} -eq 1 \
+    -o ${DO_REBASE} -eq 1 \
     -o ${REWRITE_BOOTLOADER} -eq 1 -o ${DO_REGISTRATION} -eq 1 ]; then
 
     if [ -z "${ZYPPER_NONINTERACTIVE}" -a "${DEFAULT_SNAPSHOT_ID}" -ne "${BASE_SNAPSHOT_ID}" ]; then
@@ -1466,7 +1493,11 @@ if [ -n "${ZYPPER_ARG}" -o ${REWRITE_GRUB_CFG} -eq 1 \
 	fi
     fi
 
-    output="`tukit ${TUKIT_OPTS} -c"${BASE_SNAPSHOT_ID}" open |& tee -a ${LOGFILE}`"
+    if [ ${DO_REBASE} -eq 1 ]; then
+	output="`tukit ${TUKIT_OPTS} open-empty |& tee -a ${LOGFILE}`"
+    else
+	output="`tukit ${TUKIT_OPTS} -c"${BASE_SNAPSHOT_ID}" open |& tee -a ${LOGFILE}`"
+    fi
     log_info "$output"
     SNAPSHOT_ID=`echo "${output}" | grep -e "^ID:" | cut -d " " -f 2-`
     if [ -z ${SNAPSHOT_ID} ]; then
@@ -1482,6 +1513,12 @@ if [ -n "${ZYPPER_ARG}" -o ${REWRITE_GRUB_CFG} -eq 1 \
 
     if [ ${DO_REGISTRATION} -eq 1 ]; then
 	tukit ${TUKIT_OPTS} callext ${SNAPSHOT_ID} SUSEConnect --root {} ${REGISTRATION_ARGS} |& tee -a ${LOGFILE} 1>&${origstdout}
+    fi
+
+    if [ -n "${REBASE_ARG}" ]; then
+	log_info "Calling microos-rebase ${SNAPSHOT_DIR} ${REBASE_ARG}"
+
+	microos-rebase ${SNAPSHOT_DIR} ${REBASE_ARG}
     fi
 
     if [ -n "${ZYPPER_ARG}" ]; then
